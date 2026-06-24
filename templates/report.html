@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audit Report - Agentic Report</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body>
+  <main class="report-shell">
+    <header class="report-header">
+      <div class="brand">
+        <img
+          src="https://hvseo.co/wp-content/uploads/2025/09/hv-icon-orange.svg"
+          class="logo-img"
+          alt="High Voltage SEO logo"
+        />
+        <div>
+          <div class="brand-name">Agentic Report</div>
+          <div class="brand-subtitle">Ecommerce audit report</div>
+        </div>
+      </div>
+
+      {% if not pdf_mode %}
+        <div class="report-actions">
+          {% if report_id %}
+            <a href="/reports/{{ report_id }}/pdf" class="secondary-button">
+              Export PDF
+            </a>
+          {% endif %}
+          <a href="/" class="secondary-button">Run another audit</a>
+        </div>
+      {% endif %}
+    </header>
+
+    <section class="report-hero">
+      <div>
+        <div class="eyebrow">Audit report</div>
+        <h1>{{ result.input_url }}</h1>
+        <p>
+          Final URL: <strong>{{ result.final_url }}</strong>
+        </p>
+        <p>
+          Pages checked: <strong>{{ result.pages_checked }}</strong>
+        </p>
+      </div>
+
+      <div class="score-card">
+        <div class="score-label">Audit score</div>
+        <div class="score-number">{{ summary.score }}</div>
+        <div class="score-caption">out of 100</div>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <div class="stat-card danger">
+        <span>Fails</span>
+        <strong>{{ summary.fails }}</strong>
+      </div>
+      <div class="stat-card warning">
+        <span>Warnings</span>
+        <strong>{{ summary.warnings }}</strong>
+      </div>
+      <div class="stat-card success">
+        <span>Passed</span>
+        <strong>{{ summary.passes }}</strong>
+      </div>
+      <div class="stat-card neutral">
+        <span>Total findings</span>
+        <strong>{{ summary.total }}</strong>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Merchant visibility</div>
+          <h2>Google Shopping visibility</h2>
+        </div>
+      </div>
+
+      {% if shopping_summary %}
+        <div class="finding-card">
+          <div class="finding-topline">
+            {% if shopping_summary.status == "ran" %}
+              <span class="status-pill status-pass">completed</span>
+            {% elif shopping_summary.status == "error" %}
+              <span class="status-pill status-warning">error</span>
+            {% else %}
+              <span class="status-pill status-unknown">skipped</span>
+            {% endif %}
+          </div>
+
+          <h3>{{ shopping_summary.message }}</h3>
+
+          {% if shopping_summary.status == "ran" %}
+            <div class="stats-grid shopping-stats">
+              <div class="stat-card neutral">
+                <span>Shopping visibility</span>
+                <strong>{{ shopping_summary.shopping_tab_score }}%</strong>
+              </div>
+              <div class="stat-card neutral">
+                <span>Price coverage</span>
+                <strong>{{ shopping_summary.price_coverage_score }}%</strong>
+              </div>
+              <div class="stat-card neutral">
+                <span>Review coverage</span>
+                <strong>{{ shopping_summary.review_coverage_score }}%</strong>
+              </div>
+              <div class="stat-card neutral">
+                <span>Queries checked</span>
+                <strong>{{ shopping_summary.rows|length }}</strong>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Query</th>
+                    <th>Found</th>
+                    <th>Position</th>
+                    <th>Title</th>
+                    <th>Merchant</th>
+                    <th>Price</th>
+                    <th>Rating</th>
+                    <th>Reviews</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in shopping_summary.rows %}
+                    <tr>
+                      <td>{{ row.query }}</td>
+                      <td>
+                        {% if row.found_on_shopping_tab %}
+                          <span class="status-pill status-pass">yes</span>
+                        {% else %}
+                          <span class="status-pill status-warning">no</span>
+                        {% endif %}
+                      </td>
+                      <td>{{ row.position or "—" }}</td>
+                      <td>
+                        {% if row.matched_link %}
+                          <a href="{{ row.matched_link }}" target="_blank">{{ row.matched_title or "View result" }}</a>
+                        {% else %}
+                          {{ row.matched_title or "—" }}
+                        {% endif %}
+                      </td>
+                      <td>{{ row.merchant or "—" }}</td>
+                      <td>{{ row.price or "—" }}</td>
+                      <td>{{ row.rating or "—" }}</td>
+                      <td>{{ row.reviews or "—" }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Priority</div>
+          <h2>Top findings</h2>
+        </div>
+      </div>
+
+      <div class="findings-list">
+        {% for finding in top_findings %}
+          <article class="finding-card">
+            <div class="finding-topline">
+              <span class="status-pill status-{{ finding.status }}">
+                {{ finding.status }}
+              </span>
+              <span class="severity-pill severity-{{ finding.severity }}">
+                {{ finding.severity }}
+              </span>
+            </div>
+
+            <h3>{{ finding.title }}</h3>
+            <p class="category">{{ finding.category }}</p>
+
+            <div class="finding-meta">
+              <span>Affected URLs: {{ finding.affected_urls_count }}</span>
+              <span>Priority: {{ finding.priority_score }}</span>
+              <span>Confidence: {{ finding.confidence }}</span>
+            </div>
+
+            <p><strong>Impact:</strong> {{ finding.business_impact }}</p>
+            <p><strong>Recommendation:</strong> {{ finding.recommendation }}</p>
+
+            {% if finding.evidence %}
+              <details open>
+                <summary>View evidence</summary>
+                <ul class="evidence-list">
+                  {% for evidence in finding.evidence[:5] %}
+                    <li>
+                      <strong>{{ evidence.signal }}</strong>
+                      {% if evidence.url %}
+                        <br />
+                        <a href="{{ evidence.url }}" target="_blank">{{ evidence.url }}</a>
+                      {% endif %}
+                      {% if evidence.details %}
+                        <br />
+                        <span>{{ evidence.details }}</span>
+                      {% endif %}
+                    </li>
+                  {% endfor %}
+                </ul>
+              </details>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">All checks</div>
+          <h2>Detailed findings</h2>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Severity</th>
+              <th>Category</th>
+              <th>Finding</th>
+              <th>Affected</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for finding in result.findings %}
+              <tr>
+                <td>
+                  <span class="status-pill status-{{ finding.status }}">
+                    {{ finding.status }}
+                  </span>
+                </td>
+                <td>{{ finding.severity }}</td>
+                <td>{{ finding.category }}</td>
+                <td>{{ finding.title }}</td>
+                <td>{{ finding.affected_urls_count }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Crawl sample</div>
+          <h2>Sampled pages</h2>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Type</th>
+              <th>URL</th>
+              <th>Title</th>
+              <th>H1 count</th>
+              <th>Schema</th>
+              <th>Tracking</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for page in result.page_signals %}
+              <tr>
+                <td>{{ page.status_code }}</td>
+                <td>{{ page.page_type or "unknown" }}</td>
+                <td>
+                  <a href="{{ page.final_url }}" target="_blank">{{ page.final_url }}</a>
+                </td>
+                <td>{{ page.title or "—" }}</td>
+                <td>{{ page.h1s|length }}</td>
+                <td>
+                  {% if page.schema_types %}
+                    {{ page.schema_types|join(", ") }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td>
+                  {% if page.tracking_signals %}
+                    {{ page.tracking_signals|join(", ") }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agentic Report</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero">
+      <nav class="nav">
+        <div class="brand">
+          <img
+            src="https://hvseo.co/wp-content/uploads/2025/09/hv-icon-orange.svg"
+            class="logo-img"
+            alt="High Voltage SEO logo"
+          />
+          <div>
+            <div class="brand-name">Agentic Report</div>
+            <div class="brand-subtitle">Ecommerce audit engine</div>
+          </div>
+        </div>
+      </nav>
+
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">URL-only ecommerce audit</div>
+          <h1>Generate a clean ecommerce audit report.</h1>
+          <p>
+            Check crawlability, canonicals, product schema, redirects, indexability,
+            tracking, policy pages, and Google Shopping visibility from public URLs.
+          </p>
+
+          <div class="feature-row">
+            <span>Product schema</span>
+            <span>Variant canonicals</span>
+            <span>Shopping visibility</span>
+            <span>Merchant-ready</span>
+          </div>
+        </div>
+
+        <div class="audit-card">
+          <h2>Run audit</h2>
+          <p class="muted">Enter a website URL and priority ecommerce URLs.</p>
+
+          <form method="post" action="/audit" class="audit-form">
+            <label>
+              Website URL
+              <input
+                type="url"
+                name="url"
+                placeholder="https://example.com"
+                required
+              />
+            </label>
+
+            <label>
+              Crawl mode
+              <select name="crawl_mode" id="crawl_mode">
+                <option value="manual" selected>Manual URL list</option>
+                <option value="auto">Auto crawl</option>
+                <option value="hybrid">Hybrid</option>
+              </select>
+            </label>
+
+            <label class="manual-url-field">
+              Priority URLs
+              <textarea
+                name="manual_urls_text"
+                rows="8"
+                placeholder="One URL per row&#10;https://example.com/products/example-product?variant=123&#10;https://example.com/collections/example-category&#10;https://example.com/policies/refund-policy"
+              ></textarea>
+              <span class="field-hint">
+                Used in Manual and Hybrid modes. One URL per row. The audit currently checks up to 5 pages.
+              </span>
+            </label>
+
+            <div class="form-divider"></div>
+
+            <label>
+              Merchant / Store Name
+              <input
+                type="text"
+                name="merchant_name"
+                placeholder="Example: Merry People"
+              />
+              <span class="field-hint">
+                Optional. Helps match Google Shopping results to the merchant/store.
+              </span>
+            </label>
+
+            <label>
+              Shopping Keywords
+              <textarea
+                name="shopping_keywords_text"
+                rows="6"
+                placeholder="One keyword per row&#10;bobbi ankle boot midnight blue&#10;waterproof ankle boots women"
+              ></textarea>
+              <span class="field-hint">
+                Optional. Used to check current Google Shopping visibility through SerpApi.
+              </span>
+            </label>
+
+            <div class="mini-grid">
+              <label>
+                Country
+                <input type="text" name="shopping_country" value="us" />
+              </label>
+
+              <label>
+                Language
+                <input type="text" name="shopping_language" value="en" />
+              </label>
+            </div>
+
+            <label>
+              Location
+              <input
+                type="text"
+                name="shopping_location"
+                placeholder="Optional, e.g. Austin,Texas,United States"
+              />
+            </label>
+
+            <button type="submit">
+              Generate report
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector(".audit-form");
+    const button = form.querySelector("button");
+    const crawlMode = document.querySelector("#crawl_mode");
+    const manualField = document.querySelector(".manual-url-field");
+
+    function updateManualFieldVisibility() {
+      if (crawlMode.value === "auto") {
+        manualField.classList.add("is-muted");
+      } else {
+        manualField.classList.remove("is-muted");
+      }
+    }
+
+    crawlMode.addEventListener("change", updateManualFieldVisibility);
+    updateManualFieldVisibility();
+
+    form.addEventListener("submit", () => {
+      button.textContent = "Generating report...";
+      button.disabled = true;
+    });
+  </script>
+</body>
+</html>
