@@ -1,3 +1,5 @@
+import logging
+import os
 from uuid import uuid4
 
 from fastapi import FastAPI, Form, Request
@@ -11,9 +13,10 @@ from audit.collectors.shopping_serp import check_visibility_for_keywords
 from audit.analyzers.shopping_visibility import build_shopping_findings_from_result
 from audit.reporting.html_pdf import generate_pdf_from_html
 
-import os
 
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "")
+
+logger = logging.getLogger("agentic_report")
 
 
 app = FastAPI(title="Agentic Report")
@@ -259,7 +262,18 @@ async def export_pdf(report_id: str):
         pdf_mode=True,
     )
 
-    pdf_bytes = await generate_pdf_from_html(html)
+    try:
+        pdf_bytes = await generate_pdf_from_html(html)
+    except Exception as exc:
+        logger.exception("PDF export failed for report %s", report_id)
+        return Response(
+            content=(
+                "PDF export failed. The PDF renderer (Playwright/Chromium) "
+                f"could not generate the file.\n\nError: {type(exc).__name__}: {exc}"
+            ),
+            status_code=500,
+            media_type="text/plain",
+        )
 
     safe_filename = (
         report_data["result"]
