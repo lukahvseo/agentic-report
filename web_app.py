@@ -1,5 +1,6 @@
 import logging
 import os
+import threading
 from uuid import uuid4
 
 from fastapi import FastAPI, Form, Request
@@ -11,7 +12,7 @@ from audit.models import AuditFinding, Evidence
 from audit.runner import run_audit
 from audit.collectors.shopping_serp import check_visibility_for_keywords
 from audit.analyzers.shopping_visibility import build_shopping_findings_from_result
-from audit.reporting.html_pdf import generate_pdf_from_html
+from audit.reporting.html_pdf import ensure_chromium_installed, generate_pdf_from_html
 
 
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "")
@@ -20,6 +21,19 @@ logger = logging.getLogger("agentic_report")
 
 
 app = FastAPI(title="Agentic Report")
+
+
+@app.on_event("startup")
+async def warm_up_pdf_browser():
+    # Download Chromium in the background so the first PDF export isn't slow
+    # (or broken) when the build step didn't install it.
+    def _install():
+        try:
+            ensure_chromium_installed()
+        except Exception:
+            logger.exception("Background Chromium install failed")
+
+    threading.Thread(target=_install, daemon=True).start()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

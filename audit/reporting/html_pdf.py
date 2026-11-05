@@ -1,7 +1,50 @@
 import asyncio
+import logging
+import subprocess
+import sys
+import threading
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
+
+logger = logging.getLogger("agentic_report")
+
+_install_lock = threading.Lock()
+_browser_installed = False
+
+
+def ensure_chromium_installed() -> None:
+    """Download Playwright's Chromium if it's missing (e.g. on Render, where
+    the build step may not have installed it). Runs at most once per process."""
+    global _browser_installed
+    if _browser_installed:
+        return
+    with _install_lock:
+        if _browser_installed:
+            return
+        logger.info("Ensuring Playwright Chromium is installed...")
+        proc = subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "chromium"],
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"playwright install chromium failed: {proc.stderr or proc.stdout}"
+            )
+        _browser_installed = True
+        logger.info("Playwright Chromium is ready.")
+
+
+def _launch_browser(p):
+    try:
+        return p.chromium.launch(headless=True)
+    except Exception as exc:
+        if "Executable doesn't exist" not in str(exc):
+            raise
+        ensure_chromium_installed()
+        return p.chromium.launch(headless=True)
 
 
 def _generate_pdf_from_html_sync(html: str) -> bytes:
@@ -122,7 +165,7 @@ def _generate_pdf_from_html_sync(html: str) -> bytes:
     )
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = _launch_browser(p)
 
         page = browser.new_page(
             viewport={
