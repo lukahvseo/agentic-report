@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 import subprocess
 import sys
@@ -164,6 +165,16 @@ def _generate_pdf_from_html_sync(html: str) -> bytes:
         f"<style>{css}</style>{pdf_extra_css}",
     )
 
+    # The PDF page has no server to fetch /static/ files from, so embed the
+    # logo directly as a data URI.
+    logo_path = Path("static/img/hv-icon-orange.svg")
+    if logo_path.exists():
+        logo_b64 = base64.b64encode(logo_path.read_bytes()).decode("ascii")
+        html = html.replace(
+            'src="/static/img/hv-icon-orange.svg"',
+            f'src="data:image/svg+xml;base64,{logo_b64}"',
+        )
+
     with sync_playwright() as p:
         browser = _launch_browser(p)
 
@@ -186,6 +197,10 @@ def _generate_pdf_from_html_sync(html: str) -> bytes:
             format="A4",
             print_background=True,
             prefer_css_page_size=True,
+            # An A4 page is only ~730px wide, which triggers the mobile layout.
+            # Scaling down makes Chromium lay the page out at ~1120px (desktop
+            # layout) and shrink it to fit the page.
+            scale=0.65,
             margin={
                 "top": "10mm",
                 "right": "8mm",
